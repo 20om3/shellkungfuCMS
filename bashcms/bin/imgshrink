@@ -1,0 +1,28 @@
+#!/bin/bash
+
+USAGE(){
+	echo "usage: $0 <dir>"
+	exit 1
+}
+
+[ "$#" -eq 0 ] && USAGE >&2 #[]の中では変数はダブルクォートで括る
+
+
+[ -d "$1" ] || exit 1
+[ -f "$1/html" ] || exit 1
+cd "$1" || exit 1
+
+cp html html.$$
+ls |
+grep -iE "\.(jpg|png)$" |
+grep -v -iE "_s\.(jpg|png)$" |
+while read f ; do
+	s=$(sed 's;\(....\);_s$;' <<< $f ) #sedですぐに変換しないで変数に突っ込むだけ
+	[ -e "$s" ] && continue
+	tag='<img[^>]*src="'$f'"[^>]*/>'
+	newtag='<a target="_blank" href="'$f'"><img src="'$s'" /></a>'
+
+	convert -auto-orient -geometry 300x300 "$f" "$s" &&
+	gsed -i 's;$tag;$newtag;g' html
+done
+
